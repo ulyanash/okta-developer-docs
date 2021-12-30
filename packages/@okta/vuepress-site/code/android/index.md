@@ -13,6 +13,7 @@ meta:
 
 New to Okta? Our how to guide will walk you through adding user authentication to your Android app in minutes.
 
+<include path='android/sample.md' />
 <ul class='language-ctas'>
 	<li>
 		<a href='/docs/guides/sign-into-mobile-app/android/main/' class='Button--blueDarkOutline' data-proofer-ignore>
