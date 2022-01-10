@@ -1,8 +1,10 @@
-const blc = require('broken-link-checker');
-const chalk = require('chalk');
+// const blc = require('broken-link-checker');
+// const chalk = require('chalk');
 
-const linkExtRe = new RegExp('https?://.*/[^/]+\\.[a-z]+$');
-const trailingSlashRe = new RegExp('/$');
+// const linkExtRe = new RegExp('https?://.*/[^/]+\\.[a-z]+$');
+// const trailingSlashRe = new RegExp('/$');
+
+const linkchecker = require('linkinator');
 
 const handler = require('serve-handler');
 const http = require('http');
@@ -94,73 +96,147 @@ function normalizeUrl(url) {
   return url;
 }
 
-var siteChecker = new blc.SiteChecker(options, {
-  robots: function(robots, customData){},
-  html: function(tree, robots, response, pageUrl, customData){},
-  junk: function(result, customData){},
-  link: function(result, customData){
-    if (customData.firstLink) {
-      customData.firstLink = false;
-    }
-    if (result.broken) {
-      customData.brokenLinks.push(result);
-      customData.pageBrokenCount++;
-    } else if (result.excluded) {
-      customData.pageExcludedCount++;
-    } else {
-      //good link
-      if (customData.outputGoodLinks) {
-      }
-    }
-    customData.pageLinkCount++;
-  },
-  page: function(error, pageUrl, customData){
-    if (customData.pageLinkCount > 0) {
-      customData.totalLinkCount += customData.pageLinkCount;
-      customData.totalExcludedCount += customData.pageExcludedCount;
-      customData.totalBrokenCount += customData.pageBrokenCount;
-      customData.pageLinkCount = 0;
-      customData.pageExcludedCount = 0;
-      customData.pageBrokenCount = 0;
-    }
-    customData.firstLink = true;
-  },
-  site: function(error, siteUrl, customData){
-    if (customData.totalLinkCount > 0) {
-      console.log("SUMMARY");
-      console.log("Total Links Found: " + customData.totalLinkCount);
-      if (customData.totalBrokenCount > 0) {
-        console.log("Broken Links: " + chalk.bold.red(customData.totalBrokenCount));
-        console.log();
-        var brokenMap = summarizeBrokenLinks(customData);
-        for (const [outerKey, outerValue] of brokenMap.entries()) {
-          console.log(chalk.bold.red(" Link: " + outerKey));
-          for (const [innerKey, innerValue] of outerValue.entries()) {
-            console.log(chalk.cyan("  Page: " + innerKey + " (" + innerValue + ")"));
-          }
-          console.log();
-        }
-        this.fail = true;
-      } else {
-        console.log("Broken Links: " + chalk.bold.green(customData.totalBrokenCount));
-        this.fail = false;
-      }
-    } else {
-      console.log("No links found.");
-    }
-  },
-  end: function(){
-    if (this.fail) {
-      process.exit(1);
-    } else {
-      process.exit(0);
-    }
-  },
-});
+// var siteChecker = new blc.SiteChecker(options, {
+//   robots: function(robots, customData){},
+//   html: function(tree, robots, response, pageUrl, customData){},
+//   junk: function(result, customData){},
+//   link: function(result, customData){
+//     if (customData.firstLink) {
+//       customData.firstLink = false;
+//     }
+//     if (result.broken) {
+//       customData.brokenLinks.push(result);
+//       customData.pageBrokenCount++;
+//     } else if (result.excluded) {
+//       customData.pageExcludedCount++;
+//     } else {
+//       //good link
+//       if (customData.outputGoodLinks) {
+//       }
+//     }
+//     customData.pageLinkCount++;
+//   },
+//   page: function(error, pageUrl, customData){
+//     if (customData.pageLinkCount > 0) {
+//       customData.totalLinkCount += customData.pageLinkCount;
+//       customData.totalExcludedCount += customData.pageExcludedCount;
+//       customData.totalBrokenCount += customData.pageBrokenCount;
+//       customData.pageLinkCount = 0;
+//       customData.pageExcludedCount = 0;
+//       customData.pageBrokenCount = 0;
+//     }
+//     customData.firstLink = true;
+//   },
+//   site: function(error, siteUrl, customData){
+//     if (customData.totalLinkCount > 0) {
+//       console.log("SUMMARY");
+//       console.log("Total Links Found: " + customData.totalLinkCount);
+//       if (customData.totalBrokenCount > 0) {
+//         console.log("Broken Links: " + chalk.bold.red(customData.totalBrokenCount));
+//         console.log();
+//         var brokenMap = summarizeBrokenLinks(customData);
+//         for (const [outerKey, outerValue] of brokenMap.entries()) {
+//           console.log(chalk.bold.red(" Link: " + outerKey));
+//           for (const [innerKey, innerValue] of outerValue.entries()) {
+//             console.log(chalk.cyan("  Page: " + innerKey + " (" + innerValue + ")"));
+//           }
+//           console.log();
+//         }
+//         this.fail = true;
+//       } else {
+//         console.log("Broken Links: " + chalk.bold.green(customData.totalBrokenCount));
+//         this.fail = false;
+//       }
+//     } else {
+//       console.log("No links found.");
+//     }
+//   },
+//   end: function(){
+//     if (this.fail) {
+//       process.exit(1);
+//     } else {
+//       process.exit(0);
+//     }
+//   },
+// });
 
 
 server.listen(8080, () => {
   console.log('Running at http://localhost:8080');
 });
 
-siteChecker.enqueue(siteUrl, customData);
+// siteChecker.enqueue(siteUrl, customData);
+
+
+const siteUrlForRegexp = siteUrl.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
+console.log(siteUrlForRegexp, 'siteUrlForRegexp');
+return
+
+const linksToSkip = [
+  "/*.xml$/",
+  "/*.yml$/",
+  "/img",
+  "/assets",
+  "/fonts",
+  "/docs/api/postman",
+  "/favicon",
+  "/blog/",
+  "/product/",
+  "/product/*",
+  "github.com/okta/okta-developer-docs/edit",
+];
+if (options.excludeInternalLinks) {
+  linksToSkip.push('/^('+siteUrlForRegexp+')/');
+}
+if (options.excludeExternalLinks) {
+  linksToSkip.push('/^(http)/');
+}
+
+console.log(linksToSkip, 'linkstoskip')
+
+async function simple() {
+  const results = await linkchecker.check({
+    path: 'packages/@okta/vuepress-site/dist',
+    recurse: false,
+    // linksToSkip: options.excludedKeywords
+    // linksToSkip: (link) => {
+    //   const promise = new Promise((resolve, reject) => {
+    //     console.log('checking link',link)
+
+    //     // skip internal
+    //     if (link.indexOf(siteUrl) == 0) {
+    //       resolve(true);
+    //     }
+    //     resolve(false);
+    //   })
+    //   //promise.then(res => console.log(res, "response")).catch(res => console.log(res, 'error res'));
+    //   return promise;
+    // }
+    linksToSkip: linksToSkip
+  });
+
+  // To see if all the links passed, you can check `passed`
+  console.log(`Passed: ${results.passed}`);
+
+  // Show the list of scanned links and their results
+  console.log(results, 'results');
+
+  // Example output:
+  // {
+  //   passed: true,
+  //   links: [
+  //     {
+  //       url: 'http://example.com',
+  //       status: 200,
+  //       state: 'OK'
+  //     },
+  //     {
+  //       url: 'http://www.iana.org/domains/example',
+  //       status: 200,
+  //       state: 'OK'
+  //     }
+  //   ]
+  // }
+}
+simple();
+
