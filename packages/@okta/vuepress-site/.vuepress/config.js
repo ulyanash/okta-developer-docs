@@ -283,7 +283,13 @@ module.exports = ctx => ({
 
   markdown: {
     extendMarkdown: md => {
-      md.use(require('markdown-it-attrs'))
+      md
+      .use(require('markdown-it-attrs'))
+      .use(require('markdown-it-deflist'))
+      .use(require('markdown-it-include'), {
+        bracesAreOptional: true,
+        root: 'includes', 
+      })
     },
     anchor: {
       permalinkBefore: false,
