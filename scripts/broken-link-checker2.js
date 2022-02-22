@@ -1,22 +1,22 @@
 // const blc = require('broken-link-checker');
-const chalk = require('chalk');
+const chalk = require("chalk");
 
 // const linkExtRe = new RegExp('https?://.*/[^/]+\\.[a-z]+$');
 // const trailingSlashRe = new RegExp('/$');
 
-const linkchecker = require('linkinator');
+const linkchecker = require("linkinator");
 
-// const handler = require('serve-handler');
-// const http = require('http');
-// const { resolve } = require('path');
+const handler = require("serve-handler");
+const http = require("http");
+const { resolve } = require("path");
 
-// const server = http.createServer((request, response) => {
-//   // You pass two more arguments for config and middleware
-//   // More details here: https://github.com/zeit/serve-handler#options
-//   return handler(request, response, {
-//     public: "packages/@okta/vuepress-site/dist"
-//   });
-// });
+const server = http.createServer((request, response) => {
+  // You pass two more arguments for config and middleware
+  // More details here: https://github.com/zeit/serve-handler#options
+  return handler(request, response, {
+    public: "packages/@okta/vuepress-site/dist"
+  });
+});
 
 var options = {
   excludedKeywords: [
@@ -30,17 +30,18 @@ var options = {
     "/blog/",
     "/product/",
     "/product/*",
-    "github.com/okta/okta-developer-docs/edit",
+    "github.com/okta/okta-developer-docs/edit"
   ]
 };
 
-const linkCheckMode = process.argv.slice(2) == '' ? 'all' : process.argv.slice(2);
+const linkCheckMode =
+  process.argv.slice(2) == "" ? "all" : process.argv.slice(2);
 console.log("Link Check Mode: " + linkCheckMode);
 
-if (linkCheckMode == 'internal') {
+if (linkCheckMode == "internal") {
   console.log("Running internal link check...");
   options.excludeExternalLinks = true;
-} else if (linkCheckMode == 'external') {
+} else if (linkCheckMode == "external") {
   console.log("Running external link check...");
   options.excludeInternalLinks = true;
 } else {
@@ -90,17 +91,16 @@ function summarizeBrokenLinks(customData) {
   return brokenLinkMap;
 }
 
-// server.listen(8081, () => {
-//   console.log('Running at http://localhost:8081');
-// });
+server.listen(8081, () => {
+  console.log("Running at http://localhost:8081");
+});
 
-const siteUrlForRegexp = siteUrl.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
-console.log(siteUrlForRegexp, 'siteUrlForRegexp');
-
+const siteUrlForRegexp = siteUrl.replace(/[.*+?^${}()|[\]\\\/]/g, "\\$&");
+// console.log(siteUrlForRegexp, "siteUrlForRegexp");
 
 const linksToSkip = [
-  new RegExp("\.xml$", 'img'),
-  new RegExp("\.yml$", 'img'),
+  new RegExp(".xml$", "img"),
+  new RegExp(".yml$", "img"),
   "/img",
   "/assets",
   "/fonts",
@@ -109,17 +109,17 @@ const linksToSkip = [
   "/blog/",
   "/product/",
   "/product/*",
-  "github.com/okta/okta-developer-docs/edit",
+  "github.com/okta/okta-developer-docs/edit"
 ];
 
 if (options.excludeInternalLinks) {
-  linksToSkip.push(new RegExp('^(http:\/\/localhost:)', 'img'));
+  // linksToSkip.push(new RegExp("^(http://localhost:)", "img"));
 }
 if (options.excludeExternalLinks) {
-  linksToSkip.push(new RegExp('^(?!(http:\/\/localhost:))', 'img'));
+  linksToSkip.push(new RegExp("^(?!(http://localhost:))", "img"));
 }
 
-console.log(linksToSkip, 'linkstoskip')
+console.log(linksToSkip, "linkstoskip");
 // return
 
 async function complex() {
@@ -127,54 +127,55 @@ async function complex() {
   const checker = new linkchecker.LinkChecker();
   const data = {
     pageCount: 0,
-    pageInit: false,
+    pageInit: false
   };
 
   // Respond to the beginning of a new page being scanned
-  checker.on('pagestart', url => {
-// console.log(`Scanning ${url}`);
-    data.pageCount ++;
+  checker.on("pagestart", url => {
+    // console.log(`Scanning ${url}`);
+    data.pageCount++;
     data.pageInit = false;
   });
 
   // After a page is scanned, check out the results!
-  checker.on('link', result => {
-// if(result.state === 'BROKEN' && result.status !== 404) {
+  checker.on("link", result => {
+    // if(result.state === 'BROKEN' && result.status !== 404) {
     // console.log(result, 'result')
     //console.log(result.failureDetails[0].headers['retry-after'], 'result retry-after')
-// }
-// if(result.state === 'BROKEN' && result.status !== 429) {
-    if(result.state === 'BROKEN') {
-        // check the specific url that was scanned
-        console.log(`  ${result.url}`);
+    // }
+    // if(result.state === 'BROKEN' && result.status !== 429) {
+    if (result.state === "BROKEN") {
+      // check the specific url that was scanned
+      console.log(chalk.bold.red(`${result.url}`));
 
-        // How did the scan go?  Potential states are `BROKEN`, `OK`, and `SKIPPED`
-        // console.log(`  ${result.state}`);
+      // How did the scan go?  Potential states are `BROKEN`, `OK`, and `SKIPPED`
+      // console.log(`  ${result.state}`);
 
-        // What was the status code of the response?
-        // console.log(`  ${result.status}`);
+      // What was the status code of the response?
+      // console.log(`  ${result.status}`);
 
-        // What page linked here?
-        console.log(`  ${result.parent} - parent`);
+      // What page linked here?
+      console.log(chalk.bold.blue(`${result.parent} - parent`));
     }
   });
 
   // Go ahead and start the scan! As events occur, we will see them above.
   const result = await checker.check({
-    // path: siteUrl,
-    path: 'packages/@okta/vuepress-site/dist',
-    port: 8008,
+    path: siteUrl,
+    // path: "packages/@okta/vuepress-site/dist",
+    // port: 8008,
     recurse: true,
     concurrency: 10,
+    retry: true,
     // directoryListing: true,
     // linksToSkip: linksToSkip,
-    linksToSkip: (link) => {
-// console.log(chalk.bold.red(link), 'link');
+    linksToSkip: link => {
+      // console.log(chalk.bold.red(link), 'link');
 
       return new Promise((resolve, reject) => {
-// console.log(data.pageInit, 'data.pageInit');
+        // console.log(data.pageInit, 'data.pageInit');
         // skip first root check
-        if(data.pageInit === false) {
+        if (data.pageInit === false) {
           data.pageInit = true;
           resolve(false);
         }
@@ -190,12 +191,12 @@ async function complex() {
         }
 
         resolve(false);
-      })
-    },
+      });
+    }
   });
 
   // Check to see if the scan passed!
-  console.log(result.passed ? 'PASSED :D' : 'FAILED :(');
+  console.log(result.passed ? "PASSED :D" : "FAILED :(");
 
   // How many links did we scan?
   console.log(`Scanned total of ${result.links.length} links!`);
@@ -205,7 +206,7 @@ async function complex() {
 
   // The final result will contain the list of checked links, and the pass/fail
   // const brokeLinksCount = result.links.filter(x => (x.state === 'BROKEN' && x.status !== 429));
-  const brokeLinksCount = result.links.filter(x => (x.state === 'BROKEN'));
+  const brokeLinksCount = result.links.filter(x => x.state === "BROKEN");
   console.log(`Detected ${brokeLinksCount.length} broken links.`);
 }
 
