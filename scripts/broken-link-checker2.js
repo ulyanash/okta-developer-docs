@@ -134,11 +134,14 @@ async function complex() {
   checker.on("pagestart", url => {
     // console.log(`Scanning ${url}`);
     data.pageCount++;
-    data.pageInit = false;
+    if (data.pageCount) {
+    }
+    // data.pageInit = false;
   });
 
   // After a page is scanned, check out the results!
   checker.on("link", result => {
+    console.log(result.url, result.state, "result.url, result.state");
     // if(result.state === 'BROKEN' && result.status !== 404) {
     // console.log(result, 'result')
     //console.log(result.failureDetails[0].headers['retry-after'], 'result retry-after')
@@ -161,11 +164,11 @@ async function complex() {
 
   // Go ahead and start the scan! As events occur, we will see them above.
   const result = await checker.check({
-    path: siteUrl,
-    // path: "packages/@okta/vuepress-site/dist",
+    // path: siteUrl,
+    path: "packages/@okta/vuepress-site/dist",
     // port: 8008,
     recurse: true,
-    concurrency: 10,
+    concurrency: 1,
     retry: true,
     // directoryListing: true,
     // linksToSkip: linksToSkip,
@@ -173,24 +176,28 @@ async function complex() {
       // console.log(chalk.bold.red(link), 'link');
 
       return new Promise((resolve, reject) => {
-        // console.log(data.pageInit, 'data.pageInit');
-        // skip first root check
-        if (data.pageInit === false) {
-          data.pageInit = true;
-          resolve(false);
-        }
+        function result() {
+          // console.log(data.pageInit, 'data.pageInit');
+          // skip first root check
+          if (data.pageInit === false) {
+            data.pageInit = true;
+            return false;
+          }
 
-        // check linksToSkip
-        const skips = linksToSkip
-          .map(linkToSkip => {
-            return new RegExp(linkToSkip).test(link);
-          })
-          .filter(match => !!match);
-        if (skips.length > 0) {
-          resolve(true);
+          // check linksToSkip
+          const skips = linksToSkip
+            .map(linkToSkip => {
+              return new RegExp(linkToSkip).test(link);
+            })
+            .filter(match => !!match);
+          if (skips.length > 0) {
+            return true;
+          }
+          return false;
         }
-
-        resolve(false);
+        let x = result();
+        resolve(x);
+        console.log(x, link);
       });
     }
   });
@@ -205,9 +212,11 @@ async function complex() {
   console.log(chalk.bold.red(`Scanned total of ${data.pageCount} pages!`));
 
   // The final result will contain the list of checked links, and the pass/fail
-  // const brokeLinksCount = result.links.filter(x => (x.state === 'BROKEN' && x.status !== 429));
   const brokeLinksCount = result.links.filter(x => x.state === "BROKEN");
   console.log(`Detected ${brokeLinksCount.length} broken links.`);
+
+  const http429LinksCount = result.links.filter(x => x.status === 429);
+  console.log(`Detected ${http429LinksCount.length} links with 429 code.`);
 }
 
 complex();
